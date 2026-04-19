@@ -2,12 +2,14 @@ const express = require("express");
 const dotenv = require("dotenv");
 const http = require("http"); 
 const { Server } = require("socket.io"); 
-dotenv.config();
-
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const cookieParser = require("cookie-parser"); 
+
+// Load environment variables
+dotenv.config();
+
 const connectDB = require("./app/config/db");
 const authRoutes = require("./app/router/authRoutes");
 const employeeRoutes = require("./app/router/employeeRoutes");
@@ -25,10 +27,14 @@ connectDB();
 const app = express();
 const server = http.createServer(app); 
 
-// Initialize Socket.io
+// --- DYNAMIC CONFIGURATION ---
+// This allows the backend to accept requests from your future Vercel URL
+const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+
+// Initialize Socket.io with dynamic origin
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: frontendURL,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   }
@@ -53,10 +59,10 @@ io.on('connection', (socket) => {
   });
 });
 
-//  io accessible globally in our controllers via req.app.get('io')
+// Make io accessible globally in controllers via req.app.get('io')
 app.set('io', io);
 
-
+// Ensure uploads directory exists (Note: On Render Free Tier, these are temporary)
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
@@ -66,7 +72,7 @@ if (!fs.existsSync(uploadDir)) {
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(cors({
-  origin: "http://localhost:5173", 
+  origin: frontendURL, 
   credentials: true, 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
@@ -87,13 +93,12 @@ app.use('/api/holidays', holidayRouter);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-
 // Root Route
 app.get("/", (req, res) => {
-  res.send("HR Management System API with Socket.io is running...");
+  res.send("HR Management System API is live and running...");
 });
 
-// 4. Handle 404 Routes
+// Handle 404 Routes
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
@@ -109,9 +114,11 @@ app.use((err, req, res, next) => {
   });
 });
 
+// --- SERVER START ---
 const PORT = process.env.PORT || 3001;
 
-// CRITICAL: Listen on the 'server' instance, not 'app'
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Listen on 0.0.0.0 for cloud deployment compatibility
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(` Server running on port ${PORT}`);
+  console.log(` Allowing requests from: ${frontendURL}`);
 });
