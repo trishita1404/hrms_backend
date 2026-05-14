@@ -1,8 +1,8 @@
 const express = require("express");
 const dotenv = require("dotenv");
-const http = require("http"); 
 const { Server } = require("socket.io"); 
 const cors = require("cors");
+const http = require("http"); 
 const fs = require("fs");
 const path = require("path");
 const cookieParser = require("cookie-parser"); 
@@ -29,12 +29,12 @@ const server = http.createServer(app);
 
 // --- DYNAMIC CONFIGURATION ---
 // This allows the backend to accept requests from your future Vercel URL
-const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+const frontendURL = "https://hrms-frontend-eta-dun.vercel.app";
 
 // Initialize Socket.io with dynamic origin
 const io = new Server(server, {
   cors: {
-    origin: frontendURL,
+    origin: "https://hrms-frontend-eta-dun.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   }
@@ -72,7 +72,7 @@ if (!fs.existsSync(uploadDir)) {
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(cors({
-  origin: frontendURL, 
+  origin: "https://hrms-frontend-eta-dun.vercel.app", 
   credentials: true, 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
